@@ -36,16 +36,27 @@ async def get_random_value(**kwargs):
 @kopf.on.create("wavecat.net", "v1", "databases")
 async def create_fn(spec: Any, namespace: str, logger: Logger, **kwargs) -> None:
     db = Spec.model_validate(spec)
-    passwordSecret = await secrets.read_secret(db.password.secretName, namespace)
-    password = passwordSecret[db.password.key]
+    passwordSecret = await secrets.read_secret(db.passwordSecret, namespace)
+    password = passwordSecret[db.passwordSecretKey]
 
     await kopf.execute(fns={"user": partial(handle_create_user, db.username, password)})
     await kopf.execute(
         fns={"db": partial(handle_create_database, db.name, db.username)}
     )
 
-    await secrets.make_secret(
-        db.connectionUrl.secretName, namespace, {db.connectionUrl.key: "foo"}
+    db_url = cfg.db_url.hosts()[0]
+    host, port = db_url["host"], db_url["port"]
+    await secrets.write_secret(
+        db.credentialsSecret,
+        namespace,
+        {
+            "username": db.username,
+            "password": password,
+            "database": db.name,
+            "host": host,
+            "port": port,
+            "url": f"postgresql://{db.username}:{password}@{host}:{port}/{db.name}",
+        },
     )
     logger.info(f"Database {db.name} was created")
 

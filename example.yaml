@@ -5,9 +5,5 @@ metadata:
 spec:
   name: mydb
   username: myadmin
-  password:
-    secretName: mydbpassword
-    key: password
-  connectionUrl:
-    secretName: mydb-creds
-    key: url
+  passwordSecret: mydbpassword
+  credentialsSecret:  mydbcreds

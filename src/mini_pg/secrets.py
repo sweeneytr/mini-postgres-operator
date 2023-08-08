@@ -13,7 +13,7 @@ async def read_secret(name: str, namespace: str) -> dict[str, str]:
     return {k: base64.b64decode(v).decode() for k, v in secret.data.items()}
 
 
-async def make_secret(name: str, namespace, data: dict[str, Any]) -> None:
+async def write_secret(name: str, namespace, data: dict[str, Any]) -> None:
     v1 = client.CoreV1Api()
     encoded = {k: base64.b64encode(str(v).encode()).decode() for k, v in data.items()}
 
