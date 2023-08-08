@@ -34,13 +34,13 @@ async def get_random_value(**kwargs):
 @kopf.on.create("databases")
 async def create_fn(spec: Any, namespace: str, logger: Logger, **kwargs) -> None:
     db = Spec.model_validate(spec)
-    password = await secrets.read_secret(db.password.secretName, namespace)[
+    password = (await secrets.read_secret(db.password.secretName, namespace))[
         db.password.key
     ]
 
-    async with databases.get_cursor(cfg.db_url) as cur:
+    async with databases.get_cursor(str(cfg.db_url)) as cur:
         await databases.make_user(cur, db.username, password)
-        await databases.make_db(db.name, db.username)
+        await databases.make_db(cur, db.name, db.username)
 
     await secrets.make_secret(
         db.connectionUrl.secretName, namespace, {db.connectionUrl.key: "foo"}
@@ -59,7 +59,7 @@ async def delete_fn(spec: Any, logger: Logger, **kwargs) -> None:
     # Don't worry about deleting secrets, the above `kopf.adopt` takes care of setting
     # up a cascade
     db = Spec.model_validate(spec)
-    async with databases.get_cursor(cfg.db_url) as cur:
+    async with databases.get_cursor(str(cfg.db_url)) as cur:
         await databases.drop_db(cur, db.name)
         await databases.drop_user(cur, db.username)
     logger.info(f"Database {db.name} was deleted")

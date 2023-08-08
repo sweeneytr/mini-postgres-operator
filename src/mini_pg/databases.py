@@ -1,16 +1,14 @@
 from contextlib import asynccontextmanager
 
 import psycopg
-import psycopg.sql as sql
+from psycopg import sql
 
 
 @asynccontextmanager
 async def get_cursor(db_url: str) -> psycopg.AsyncCursor:
     # This vexes me. autocommit != "auto commit transactions at close". Instead, it
     # means "every statement has an immediate effect", a.k.a.
-    async with await psycopg.AsyncConnection.connect(
-        dsn=db_url, autocommit=True
-    ) as conn:
+    async with await psycopg.AsyncConnection.connect(db_url, autocommit=True) as conn:
         async with conn.cursor() as cur:
             yield cur
 

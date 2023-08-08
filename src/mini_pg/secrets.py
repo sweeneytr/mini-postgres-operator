@@ -15,7 +15,7 @@ async def read_secret(name: str, namespace: str) -> dict[str, str]:
 
 async def make_secret(name: str, namespace, data: dict[str, Any]) -> None:
     v1 = client.CoreV1Api()
-    encoded = {k: base64.b64encode(str(v).encode()).decode() for k, v in data}
+    encoded = {k: base64.b64encode(str(v).encode()).decode() for k, v in data.items()}
 
     data = templates.secret(name=name, data=encoded)
 
