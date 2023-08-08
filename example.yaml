@@ -1,0 +1,13 @@
+apiVersion: alpha.wavecat.net/v1
+kind: Database
+metadata:
+  name: my-db
+spec:
+  name: mydb
+  username: myadmin
+  password:
+    secretName: mydbpassword
+    key: password
+  connectionUrl:
+    secretName: mydb-creds
+    key: url
