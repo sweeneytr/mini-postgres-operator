@@ -1,45 +1,49 @@
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 
-import psycopg2
-import psycopg2.errors
-from psycopg2 import sql
+import psycopg
+import psycopg.sql as sql
 
 
-@contextmanager
-def get_cursor(db_url: str):
-    with psycopg2.connect(dsn=db_url) as conn:
-        # This vexes me. autocommit != "auto commit transactions at close". Instead, it
-        # means "every statement has an immediate effect", a.k.a.
-        conn.set_session(autocommit=True)
-        with conn.cursor() as cur:
+@asynccontextmanager
+async def get_cursor(db_url: str) -> psycopg.AsyncCursor:
+    # This vexes me. autocommit != "auto commit transactions at close". Instead, it
+    # means "every statement has an immediate effect", a.k.a.
+    async with await psycopg.AsyncConnection.connect(
+        dsn=db_url, autocommit=True
+    ) as conn:
+        async with conn.cursor() as cur:
             yield cur
 
 
-def make_user(cur, username: str, password: str) -> None:
+async def make_user(cur: psycopg.AsyncCursor, username: str, password: str) -> None:
     try:
-        cur.execute(
+        await cur.execute(
             sql.SQL("CREATE USER {} WITH PASSWORD {};").format(
                 sql.Identifier(username), sql.Literal(password)
             )
         )
-    except psycopg2.errors.DuplicateObject:
+    except psycopg.errors.DuplicateObject:
         pass
 
 
-def make_db(cur, name: str, owner: str) -> None:
+async def make_db(cur: psycopg.AsyncCursor, name: str, owner: str) -> None:
     try:
-        cur.execute(
+        await cur.execute(
             sql.SQL("CREATE DATABASE {} WITH OWNER {};").format(
                 sql.Identifier(name), sql.Identifier(owner)
             )
         )
-    except psycopg2.errors.DuplicateDatabase:
+    except psycopg.errors.DuplicateDatabase:
         pass
 
 
-def drop_user(cur, username: str) -> None:
-    cur.execute(sql.SQL("DROP USER IF EXISTS {}").format(sql.Identifier(username)))
+async def drop_user(cur: psycopg.AsyncCursor, username: str) -> None:
+    await cur.execute(
+        sql.SQL("DROP USER IF EXISTS {}").format(sql.Identifier(username))
+    )
 
 
-def drop_db(cur, name: str) -> None:
-    cur.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(name)))
+async def drop_db(cur: psycopg.AsyncCursor, name: str) -> None:
+    await cur.execute(
+        sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(name))
+    )
