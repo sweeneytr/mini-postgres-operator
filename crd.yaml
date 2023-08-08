@@ -1,9 +1,9 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: databases.alpha.wavecat.net
+  name: databases.wavecat.net
 spec:
-  group: alpha.wavecat.net
+  group: wavecat.net
   scope: Namespaced
   names:
     plural: databases
@@ -38,6 +38,7 @@ spec:
                       message: Cannot rename admins
                 password:
                   type: object
+                  required: [secretName, key]
                   properties:
                     secretName:
                       type: string
@@ -53,7 +54,7 @@ spec:
                           message: Cannot change secret keys
                 connectionUrl:
                   type: object
-                  required: [secretName]
+                  required: [secretName, key]
                   properties:
                     secretName:
                       type: string

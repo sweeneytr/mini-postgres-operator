@@ -14,25 +14,19 @@ async def get_cursor(db_url: str) -> psycopg.AsyncCursor:
 
 
 async def make_user(cur: psycopg.AsyncCursor, username: str, password: str) -> None:
-    try:
-        await cur.execute(
-            sql.SQL("CREATE USER {} WITH PASSWORD {};").format(
-                sql.Identifier(username), sql.Literal(password)
-            )
+    await cur.execute(
+        sql.SQL("CREATE USER {} WITH PASSWORD {};").format(
+            sql.Identifier(username), sql.Literal(password)
         )
-    except psycopg.errors.DuplicateObject:
-        pass
+    )
 
 
 async def make_db(cur: psycopg.AsyncCursor, name: str, owner: str) -> None:
-    try:
-        await cur.execute(
-            sql.SQL("CREATE DATABASE {} WITH OWNER {};").format(
-                sql.Identifier(name), sql.Identifier(owner)
-            )
+    await cur.execute(
+        sql.SQL("CREATE DATABASE {} WITH OWNER {};").format(
+            sql.Identifier(name), sql.Identifier(owner)
         )
-    except psycopg.errors.DuplicateDatabase:
-        pass
+    )
 
 
 async def drop_user(cur: psycopg.AsyncCursor, username: str) -> None:

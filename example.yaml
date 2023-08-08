@@ -1,4 +1,4 @@
-apiVersion: alpha.wavecat.net/v1
+apiVersion: wavecat.net/v1
 kind: Database
 metadata:
   name: my-db
