@@ -11,6 +11,7 @@ from kubernetes_asyncio import config
 from . import databases, secrets
 from .config import Config
 from .crd import Spec
+from . import passgen
 
 cfg: Config
 
@@ -32,21 +33,34 @@ async def get_current_timestamp(**kwargs):
 async def get_random_value(**kwargs):
     return random.randint(0, 1_000_000)
 
+async def _load_password(name: str, namespace: str, logger: Logger) -> str:
+    try:
+        secret = await secrets.read_secret(name, namespace)
+    except Exception:
+        logger.exception("Secret did not exist")
+        password = passgen.get_random_string(32)
+        await secrets.create_secret(name, namespace, {"password": password})
+    else:
+        password = secret.pop("password")
+        if password is None:
+            password = passgen.get_random_string(32)
+            await secrets.patch_secret(name, namespace, {"password": password, **secret})
+
 
 @kopf.on.create("wavecat.net", "v1", "databases")
 async def create_fn(spec: Any, namespace: str, logger: Logger, **kwargs) -> None:
     db = Spec.model_validate(spec)
-    passwordSecret = await secrets.read_secret(db.passwordSecret, namespace)
-    password = passwordSecret[db.passwordSecretKey]
+
+    password = _load_password(db.credentialsSecret, namespace, logger)
 
     await kopf.execute(fns={"user": partial(handle_create_user, db.username, password)})
     await kopf.execute(
         fns={"db": partial(handle_create_database, db.name, db.username)}
     )
 
-    db_url = cfg.db_url.hosts()[0]
+    db_url = cfg.db_url.hosts()[0] # For some reason this is a multihost URL
     host, port = db_url["host"], db_url["port"]
-    await secrets.write_secret(
+    await secrets.patch_secret(
         db.credentialsSecret,
         namespace,
         {

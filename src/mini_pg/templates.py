@@ -6,3 +6,4 @@ def secret(name: str, data: dict) -> dict:
         "metadata": {"name": name},
         "data": data,
     }
+    
